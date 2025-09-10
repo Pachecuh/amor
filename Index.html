@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sopa de Letras del Amor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fce7f3; /* Rosa claro de Tailwind */
+            color: #4a4a4a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            max-width: 90%;
+            width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #db2777; /* Rosa oscuro de Tailwind */
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .word-list {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .word-item {
+            background-color: #fbcfe8; /* Rosa más claro */
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .word-item.found {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            text-decoration: line-through;
+            transform: scale(1.05);
+        }
+
+        .grid-container {
+            display: grid;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #db2777;
+        }
+
+        .grid-cell {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .grid-cell.selected {
+            background-color: #f9a8d4; /* Rosa pálido */
+        }
+
+        .grid-cell.highlighted {
+            background-color: #f43f5e; /* Rojo de Tailwind */
+            color: white;
+        }
+
+        #message {
+            margin-top: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #db2777;
+            text-align: center;
+        }
+
+        @media (min-width: 640px) {
+            .container {
+                padding: 2.5rem;
+            }
+
+            .grid-cell {
+                width: 40px;
+                height: 40px;
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-pink-100">
+    <div class="container">
+        <h1 class="text-pink-600">Sopa de Letras del Amor</h1>
+        <ul id="word-list" class="word-list">
+            <!-- La lista de palabras se generará con JS -->
+        </ul>
+        <div id="grid-container" class="grid-container">
+            <!-- La cuadrícula se generará con JS -->
+        </div>
+        <div id="message" class="text-pink-600">¡Encuentra todas las palabras!</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const words = ['AMOR', 'TEAMO', 'JUNTOS', 'FELIZ', 'CARINO', 'NOVIOS'];
+            const gridSize = 10;
+            const gridContainer = document.getElementById('grid-container');
+            const wordListElement = document.getElementById('word-list');
+            const messageElement = document.getElementById('message');
+            const grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill(''));
+            let selectedCells = [];
+            let isSelecting = false;
+            let foundWords = 0;
+
+            // Ajustar el tamaño del grid y las celdas
+            gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            
+            // Reemplazar "TE AMO" con "TEAMO" para que funcione como una sola palabra.
+            // Reemplazar "CARINO" por "CARINOO"
+            const gameWords = ['AMOR', 'TEAMO', 'JUNTOS', 'FELIZ', 'CARIÑO', 'NOVIOS'];
+
+            const directions = [
+                [0, 1],   // Horizontal
+                [1, 0],   // Vertical
+                [1, 1],   // Diagonal derecha
+                [1, -1]   // Diagonal izquierda
+            ];
+
+            const getRandomLetter = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));
+
+            // Colocar palabras en la cuadrícula
+            const placeWords = () => {
+                for (let word of gameWords) {
+                    let placed = false;
+                    let attempts = 0;
+                    while (!placed && attempts < 100) {
+                        const dir = directions[Math.floor(Math.random() * directions.length)];
+                        const row = Math.floor(Math.random() * gridSize);
+                        const col = Math.floor(Math.random() * gridSize);
+
+                        let fits = true;
+                        let cellsToPlace = [];
+                        for (let i = 0; i < word.length; i++) {
+                            const newRow = row + i * dir[0];
+                            const newCol = col + i * dir[1];
+
+                            if (newRow >= gridSize || newRow < 0 || newCol >= gridSize || newCol < 0 || (grid[newRow][newCol] !== '' && grid[newRow][newCol] !== word[i])) {
+                                fits = false;
+                                break;
+                            }
+                            cellsToPlace.push({row: newRow, col: newCol});
+                        }
+
+                        if (fits) {
+                            for (let i = 0; i < word.length; i++) {
+                                grid[cellsToPlace[i].row][cellsToPlace[i].col] = word[i];
+                            }
+                            placed = true;
+                        }
+                        attempts++;
+                    }
+                }
+            };
+
+            // Rellenar espacios vacíos
+            const fillGrid = () => {
+                for (let r = 0; r < gridSize; r++) {
+                    for (let c = 0; c < gridSize; c++) {
+                        if (grid[r][c] === '') {
+                            grid[r][c] = getRandomLetter();
+                        }
+                    }
+                }
+            };
+
+            // Renderizar la cuadrícula y la lista de palabras
+            const renderGame = () => {
+                gridContainer.innerHTML = '';
+                for (let r = 0; r < gridSize; r++) {
+                    for (let c = 0; c < gridSize; c++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('grid-cell', 'bg-white', 'hover:bg-pink-200', 'transition', 'rounded-md', 'm-0.5');
+                        cell.dataset.row = r;
+                        cell.dataset.col = c;
+                        cell.textContent = grid[r][c];
+                        gridContainer.appendChild(cell);
+                    }
+                }
+
+                wordListElement.innerHTML = '';
+                gameWords.forEach(word => {
+                    const li = document.createElement('li');
+                    li.classList.add('word-item', 'bg-pink-200', 'text-pink-600', 'rounded-full', 'px-4', 'py-1', 'text-sm');
+                    li.textContent = word;
+                    li.id = `word-${word}`;
+                    wordListElement.appendChild(li);
+                });
+            };
+
+            // Lógica para manejar la selección de celdas
+            const handleSelection = () => {
+                const checkWord = () => {
+                    if (selectedCells.length < 2) return;
+
+                    const start = selectedCells[0];
+                    const end = selectedCells[selectedCells.length - 1];
+
+                    const wordForward = selectedCells.map(cell => grid[cell.row][cell.col]).join('');
+                    const wordBackward = [...wordForward].reverse().join('');
+
+                    if (gameWords.includes(wordForward) || gameWords.includes(wordBackward)) {
+                        const wordFound = gameWords.includes(wordForward) ? wordForward : wordBackward;
+                        selectedCells.forEach(cell => {
+                            const domCell = gridContainer.children[cell.row * gridSize + cell.col];
+                            domCell.classList.add('highlighted');
+                            domCell.classList.remove('selected');
+                        });
+                        
+                        document.getElementById(`word-${wordFound}`).classList.add('found');
+                        foundWords++;
+
+                        if (foundWords === gameWords.length) {
+                            messageElement.textContent = '¡Felicidades, encontraste todas las palabras!';
+                        } else {
+                            messageElement.textContent = `¡Encontraste la palabra "${wordFound}"! Sigue buscando...`;
+                        }
+                    } else {
+                        selectedCells.forEach(cell => {
+                            gridContainer.children[cell.row * gridSize + cell.col].classList.remove('selected');
+                        });
+                    }
+                    selectedCells = [];
+                };
+
+                const onMove = (e) => {
+                    if (!isSelecting) return;
+                    e.preventDefault();
+                    
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    const targetElement = document.elementFromPoint(clientX, clientY);
+
+                    if (targetElement && targetElement.classList.contains('grid-cell')) {
+                        const row = parseInt(targetElement.dataset.row);
+                        const col = parseInt(targetElement.dataset.col);
+                        const cellId = `${row}-${col}`;
+                        
+                        // Solo si no está ya seleccionado
+                        if (selectedCells.length === 0 || selectedCells[selectedCells.length - 1].id !== cellId) {
+                            const newCell = { row, col, id: cellId };
+                            const lastCell = selectedCells[selectedCells.length - 1];
+
+                            if (selectedCells.length > 0) {
+                                // Validar dirección
+                                const dRow = Math.abs(newCell.row - lastCell.row);
+                                const dCol = Math.abs(newCell.col - lastCell.col);
+
+                                // Si no está en línea recta, o si es la primera celda, se permite
+                                if (dRow === 0 || dCol === 0 || dRow === dCol) {
+                                    selectedCells.push(newCell);
+                                    targetElement.classList.add('selected');
+                                }
+                            } else {
+                                selectedCells.push(newCell);
+                                targetElement.classList.add('selected');
+                            }
+                        }
+                    }
+                };
+
+                const onEnd = () => {
+                    isSelecting = false;
+                    checkWord();
+                };
+
+                gridContainer.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('grid-cell')) {
+                        isSelecting = true;
+                        e.target.classList.add('selected');
+                        selectedCells.push({ row: parseInt(e.target.dataset.row), col: parseInt(e.target.dataset.col), id: `${e.target.dataset.row}-${e.target.dataset.col}` });
+                    }
+                });
+
+                gridContainer.addEventListener('mousemove', onMove);
+                gridContainer.addEventListener('mouseup', onEnd);
+                gridContainer.addEventListener('mouseleave', onEnd);
+
+                gridContainer.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (targetElement && targetElement.classList.contains('grid-cell')) {
+                        isSelecting = true;
+                        targetElement.classList.add('selected');
+                        selectedCells.push({ row: parseInt(targetElement.dataset.row), col: parseInt(targetElement.dataset.col), id: `${targetElement.dataset.row}-${targetElement.dataset.col}` });
+                    }
+                });
+
+                gridContainer.addEventListener('touchmove', onMove);
+                gridContainer.addEventListener('touchend', onEnd);
+            };
+
+            placeWords();
+            fillGrid();
+            renderGame();
+            handleSelection();
+        });
+    </script>
+</body>
+</html>
